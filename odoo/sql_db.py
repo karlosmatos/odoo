@@ -14,6 +14,7 @@ import re
 import threading
 import time
 import uuid
+from dotenv import load_dotenv
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from inspect import currentframe
@@ -616,6 +617,7 @@ class ConnectionPool(object):
         self._connections = []
         self._maxconn = max(maxconn, 1)
         self._lock = threading.Lock()
+        load_dotenv()
 
     def __repr__(self):
         used = len([1 for c, u, _ in self._connections[:] if u])
@@ -678,9 +680,16 @@ class ConnectionPool(object):
                 raise PoolError('The Connection Pool Is Full')
 
         try:
-            result = psycopg2.connect(
-                connection_factory=PsycoConnection,
-                **connection_info)
+            connection_params = {
+                'dbname': os.getenv('DB_NAME'),
+                'user': os.getenv('DB_USER'),
+                'password': os.getenv('DB_PASSWORD'),
+                'host': os.getenv('DB_HOST'),
+                'port': '5432',
+                'connection_factory': PsycoConnection,
+            }
+
+            result = psycopg2.connect(**connection_params)
         except psycopg2.Error:
             _logger.info('Connection to the database failed')
             raise
